@@ -3,7 +3,6 @@
         pluginName = 'datepicker',
         autoInitSelector = '.datepicker-here',
         $body, $datepickersContainer,
-        containerBuilt = false,
         baseTemplate = '' +
             '<div class="datepicker">' +
             '<i class="datepicker--pointer"></i>' +
@@ -146,8 +145,18 @@
         viewIndexes: ['days', 'months', 'years'],
 
         init: function () {
-            if (!containerBuilt && !this.opts.inline && this.elIsInput) {
-                this._buildDatepickersContainer();
+            if (!this.opts.inline && this.elIsInput) {
+
+                // AirDatepicker's container is removed when Turbolinks replaces body contents
+                // but flag 'containerBuilt' remains true.
+                //
+                // It is better to check if $datepickersContainer really is in body.
+                // $.contains is very fast and well supported.
+                // https://developer.mozilla.org/en-US/docs/Web/API/Node/contains
+
+                if (!$datepickersContainer || !$.contains($body[0], $datepickersContainer[0])) {
+                    this._buildDatepickersContainer();
+                }
             }
             this._buildBaseHtml();
             this._defineLocale(this.opts.language);
@@ -261,7 +270,6 @@
         },
 
         _buildDatepickersContainer: function () {
-            containerBuilt = true;
             $body.append('<div class="datepickers-container" id="datepickers-container"></div>');
             $datepickersContainer = $('#datepickers-container');
         },
@@ -1489,6 +1497,14 @@
     $(function () {
         $(autoInitSelector).datepicker();
     })
+
+    // Add support to Turbolinks 5
+    // https://github.com/turbolinks/turbolinks
+    //
+    // Turbolinks replaces the body contents with new which is loaded via XHR.
+    $(document).on("turbolinks:load", function () {
+      $body = $("body");
+    });
 
 })();
 
